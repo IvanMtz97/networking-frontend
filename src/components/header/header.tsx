@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useAuth0 } from "@auth0/auth0-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -16,11 +17,25 @@ function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center justify-between px-4 w-full">
         <div className="mr-4 hidden md:flex">
-          <a className="mr-6 flex items-center space-x-2" href="/">
+          <Link to="/" className="mr-6 flex items-center space-x-2">
             <span className="hidden font-bold sm:inline-block">
               Networking
             </span>
-          </a>
+          </Link>
+          <nav className="flex items-center gap-4 text-sm lg:gap-6">
+            <Link
+              to="/"
+              className="transition-colors hover:text-foreground/80 text-foreground/60 [&.active]:text-foreground"
+            >
+              Home
+            </Link>
+            <Link
+              to="/about"
+              className="transition-colors hover:text-foreground/80 text-foreground/60 [&.active]:text-foreground"
+            >
+              About
+            </Link>
+          </nav>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
           {isLoading ? (
