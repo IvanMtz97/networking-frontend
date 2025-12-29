@@ -91,7 +91,6 @@ function CreateProjectPage() {
             <Editor
               value={body}
               onChange={setBody}
-              placeholder="Detailed explanation of the project features, stack, and goals..."
             />
           </div>
 
