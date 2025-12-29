@@ -62,6 +62,9 @@ function Header() {
                       {user?.email}
                     </p>
                   </div>
+                  <Button asChild variant="ghost" className="w-full justify-start font-normal">
+                    <Link to="/profile">Profile</Link>
+                  </Button>
                   <Button
                     variant="outline"
                     className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
