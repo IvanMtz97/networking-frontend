@@ -3,12 +3,27 @@ import { useAuth0 } from '@auth0/auth0-react'
 import { Button } from '@/components/ui/button'
 import { Link } from '@tanstack/react-router'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Skeleton } from '@/components/ui/skeleton'
 
 type ProfileSearch = {
   tab?: 'info' | 'projects'
 }
+
+type Project = {
+  id: string
+  name: string
+  description: string
+  industry: string
+  tags: string[]
+  banner: string
+  createdAt: string
+  authorId: string
+}
+
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 export const Route = createFileRoute('/profile')({
   component: ProfilePage,
@@ -51,15 +66,62 @@ const MOCK_PROJECTS = [
 ]
 
 function ProfilePage() {
-  const { user, isAuthenticated, isLoading } = useAuth0()
+  const { user, isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0()
   const { tab } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
+  const [projects, setProjects] = useState<Project[]>([])
+  const [projectsLoading, setProjectsLoading] = useState(false)
+  const [projectsError, setProjectsError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate({ to: '/' })
     }
   }, [isLoading, isAuthenticated, navigate])
+
+  useEffect(() => {
+    if (tab !== 'projects') return
+    let active = true
+    const loadProjects = async () => {
+      setProjectsLoading(true)
+      setProjectsError(null)
+      try {
+        const token = await getAccessTokenSilently({
+          authorizationParams: {
+            audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+            scope: import.meta.env.VITE_AUTH0_SCOPE ?? 'openid profile email',
+          },
+        }).catch(() => undefined)
+        const authorParam = user?.sub ? `&authorId=${encodeURIComponent(user.sub)}` : ''
+        const res = await fetch(`${API_BASE}/projects?page=0&limit=20${authorParam}`, {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => null)
+          throw new Error(data?.message || 'Unable to load projects')
+        }
+        const data = await res.json()
+        if (active) {
+          setProjects(data?.data ?? [])
+        }
+      } catch (err) {
+        if (active) {
+          setProjectsError(err instanceof Error ? err.message : 'Unable to load projects')
+        }
+      } finally {
+        if (active) {
+          setProjectsLoading(false)
+        }
+      }
+    }
+
+    loadProjects()
+    return () => {
+      active = false
+    }
+  }, [tab, user?.sub, getAccessTokenSilently])
 
   if (isLoading || !isAuthenticated) {
     return (
@@ -155,32 +217,59 @@ function ProfilePage() {
               </Button>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {MOCK_PROJECTS.map((project) => (
-                <div key={project.id} className="group relative border rounded-lg overflow-hidden bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow">
-                  <div className="aspect-video w-full overflow-hidden bg-muted">
-                    <img
-                      src={project.banner}
-                      alt={project.name}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
+            {projectsError && (
+              <Alert variant="destructive">
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{projectsError}</AlertDescription>
+              </Alert>
+            )}
+
+            {projectsLoading ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, idx) => (
+                  <div key={idx} className="space-y-3">
+                    <Skeleton className="aspect-video w-full rounded" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-6 w-full" />
                   </div>
-                  <div className="p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">{project.industry}</span>
-                      <span className="text-xs text-muted-foreground">{new Date(project.createdAt).toLocaleDateString()}</span>
+                ))}
+              </div>
+            ) : projects.length === 0 ? (
+              <p className="text-muted-foreground">You have not created any projects yet.</p>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {projects.map((project) => (
+                  <Link
+                    key={project.id}
+                    to="/project/$id"
+                    params={{ id: project.id }}
+                    className="group relative border rounded-lg overflow-hidden bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="aspect-video w-full overflow-hidden bg-muted">
+                      <img
+                        src={project.banner}
+                        alt={project.name}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
                     </div>
-                    <h3 className="font-semibold tracking-tight text-lg line-clamp-1">{project.name}</h3>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
-                    <div className="flex flex-wrap gap-1 pt-2">
-                      {project.tags.map(tag => (
-                        <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded border bg-secondary/50 text-secondary-foreground">{tag}</span>
-                      ))}
+                    <div className="p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">{project.industry}</span>
+                        <span className="text-xs text-muted-foreground">{new Date(project.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <h3 className="font-semibold tracking-tight text-lg line-clamp-1">{project.name}</h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
+                      <div className="flex flex-wrap gap-1 pt-2">
+                        {project.tags.map(tag => (
+                          <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded border bg-secondary/50 text-secondary-foreground">{tag}</span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>

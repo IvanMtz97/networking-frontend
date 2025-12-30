@@ -15,6 +15,11 @@ declare module '@tanstack/react-router' {
   }
 }
 
+const auth0Audience = import.meta.env.VITE_AUTH0_AUDIENCE
+const auth0Scope = import.meta.env.VITE_AUTH0_SCOPE ?? 'openid profile email'
+
+console.log('CREDS', { auth0Audience, auth0Scope })
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Auth0Provider
@@ -22,6 +27,8 @@ createRoot(document.getElementById('root')!).render(
       clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
       authorizationParams={{
         redirect_uri: window.location.origin,
+        audience: auth0Audience,
+        scope: auth0Scope,
       }}
       cacheLocation="localstorage"
       useRefreshTokens={true}
