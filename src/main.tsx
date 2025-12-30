@@ -18,8 +18,6 @@ declare module '@tanstack/react-router' {
 const auth0Audience = import.meta.env.VITE_AUTH0_AUDIENCE
 const auth0Scope = import.meta.env.VITE_AUTH0_SCOPE ?? 'openid profile email'
 
-console.log('CREDS', { auth0Audience, auth0Scope })
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Auth0Provider

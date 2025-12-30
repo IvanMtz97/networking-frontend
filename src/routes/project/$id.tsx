@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, useMatches } from '@tanstack/react-router'
+import { useAuth0 } from '@auth0/auth0-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -15,6 +16,7 @@ type Project = {
   banner: string
   createdAt: string
   updatedAt: string
+  authorId: string
 }
 
 export const Route = createFileRoute('/project/$id')({
@@ -23,6 +25,8 @@ export const Route = createFileRoute('/project/$id')({
 
 function ProjectDetailPage() {
   const { id } = Route.useParams()
+  const { user } = useAuth0()
+  const matches = useMatches()
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -81,40 +85,60 @@ function ProjectDetailPage() {
     )
   }
 
+  const isAuthor = project.authorId && user?.sub === project.authorId
+  const isEditChildActive = matches.some((m) => m.routeId === '/project/$id/edit')
+
   return (
     <div className="container max-w-4xl py-10 px-4 md:px-0 mx-auto space-y-6">
-      <div className="space-y-2">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-            {project.industry}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            Updated {new Date(project.updatedAt).toLocaleDateString()}
-          </span>
-        </div>
-        <h1 className="text-4xl font-bold tracking-tight">{project.name}</h1>
-        <p className="text-muted-foreground text-lg">{project.description}</p>
-      </div>
+      {!isEditChildActive && (
+        <>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                  {project.industry}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Updated {new Date(project.updatedAt).toLocaleDateString()}
+                </span>
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight">{project.name}</h1>
+              <p className="text-muted-foreground text-lg">{project.description}</p>
+            </div>
+            {isAuthor && (
+              <Link
+                to="/project/$id/edit"
+                params={{ id: project.id }}
+                className="inline-flex items-center justify-center rounded-md border bg-primary text-primary-foreground px-4 py-2 text-sm font-medium shadow-sm hover:bg-primary/90"
+              >
+                Edit
+              </Link>
+            )}
+          </div>
 
-      <div className="overflow-hidden rounded-lg border bg-card">
-        <img
-          src={project.banner}
-          alt={project.name}
-          className="w-full h-[320px] object-cover"
-        />
-      </div>
+          <div className="overflow-hidden rounded-lg border bg-card">
+            <img
+              src={project.banner}
+              alt={project.name}
+              className="w-full h-[320px] object-cover"
+            />
+          </div>
 
-      <div className="prose prose-sm sm:prose-base max-w-none dark:prose-invert">
-        <div dangerouslySetInnerHTML={{ __html: project.body }} />
-      </div>
+          <div className="prose prose-sm sm:prose-base max-w-none dark:prose-invert">
+            <div dangerouslySetInnerHTML={{ __html: project.body }} />
+          </div>
 
-      <div className="flex flex-wrap gap-2">
-        {project.tags.map((tag) => (
-          <span key={tag} className="text-xs px-2 py-1 rounded-full border bg-secondary/50 text-secondary-foreground">
-            {tag}
-          </span>
-        ))}
-      </div>
+          <div className="flex flex-wrap gap-2">
+            {project.tags.map((tag) => (
+              <span key={tag} className="text-xs px-2 py-1 rounded-full border bg-secondary/50 text-secondary-foreground">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </>
+      )}
+
+      <Outlet />
     </div>
   )
 }

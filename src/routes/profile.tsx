@@ -34,37 +34,6 @@ export const Route = createFileRoute('/profile')({
   },
 })
 
-// Mock Data matching Prisma Schema
-const MOCK_PROJECTS = [
-  {
-    id: '1',
-    name: 'Networking App',
-    description: 'A professional networking platform for developers.',
-    industry: 'Tech',
-    tags: ['React', 'Node.js', 'Prisma'],
-    banner: 'https://placehold.co/600x400',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    name: 'E-commerce Store',
-    description: 'Full stack e-commerce solution with payment gateway.',
-    industry: 'Retail',
-    tags: ['Next.js', 'Stripe', 'Tailwind'],
-    banner: 'https://placehold.co/600x400',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    name: 'AI Chatbot',
-    description: 'Customer service chatbot using LLMs.',
-    industry: 'AI',
-    tags: ['Python', 'LangChain', 'OpenAI'],
-    banner: 'https://placehold.co/600x400',
-    createdAt: new Date().toISOString(),
-  },
-]
-
 function ProfilePage() {
   const { user, isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0()
   const { tab } = Route.useSearch()
